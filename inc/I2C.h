@@ -14,7 +14,7 @@
 
 #define SlaveAddress 0x44
 
-#define I2C_Speed 200000
+//#define I2C_Speed 200000    //run at 400k
 
 void I2C_GPIO_Init();
 

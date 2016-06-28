@@ -3,7 +3,7 @@
  *
  *  Created on: 2016年2月7日
  *      Author: Romeli
- */
+*/
 #include "I2C.h"
 
 I2CClass I2C;
@@ -13,11 +13,15 @@ void I2CClass::init()
 	I2C_InitTypeDef I2C_InitStructure;
 
 	I2C_GPIO_Init();
+	RCC_I2CCLKConfig(RCC_I2C1CLK_SYSCLK);
+	RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C1, ENABLE);  //！！！需要打开I2C时钟才可设置引脚模式
+
 
 	I2C_InitStructure.I2C_Ack = I2C_Ack_Enable;
 	I2C_InitStructure.I2C_AcknowledgedAddress = I2C_AcknowledgedAddress_7bit;
-	I2C_InitStructure.I2C_ClockSpeed = I2C_Speed;
-	I2C_InitStructure.I2C_DutyCycle = I2C_DutyCycle_2;
+	I2C_InitStructure.I2C_AnalogFilter = ENABLE;
+	I2C_InitStructure.I2C_DigitalFilter = 0;
+	I2C_InitStructure.I2C_Timing = 0x00100005;
 	I2C_InitStructure.I2C_Mode = I2C_Mode_I2C;
 	I2C_InitStructure.I2C_OwnAddress1 = SlaveAddress;
 
@@ -28,16 +32,20 @@ void I2C_GPIO_Init()
 {
 	GPIO_InitTypeDef GPIO_InitStructure;
 
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
-	RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C1, ENABLE);  //！！！需要打开I2C时钟才可设置引脚模式
+	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOB, ENABLE);
 
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_6 | GPIO_Pin_7;
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_OD;
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_10 | GPIO_Pin_11;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
+	GPIO_InitStructure.GPIO_OType = GPIO_OType_OD;
+	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 
 	GPIO_Init(GPIOB, &GPIO_InitStructure);
-}
 
+	GPIO_PinAFConfig(GPIOB,GPIO_PinSource10,GPIO_AF_2);
+	GPIO_PinAFConfig(GPIOB,GPIO_PinSource11,GPIO_AF_1);
+}
+/*
 void I2CClass::send(uint8_t D_Add, uint8_t data)
 {
 //	//等待总线空闲
@@ -93,9 +101,12 @@ void I2CClass::send(uint8_t D_Add, uint8_t* dataBuf, uint8_t size)
 		;
 	//发送开始信号
 	I2C_GenerateSTART(I2C1, ENABLE);
+	I2C_TransferHandling(I2C1,)
+
 	while (!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_MODE_SELECT))
 		;
 	//发送设备地址+写信号
+
 	I2C_Send7bitAddress(I2C1, D_Add, I2C_Direction_Transmitter);
 	while (!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED))
 		;
@@ -112,7 +123,8 @@ void I2CClass::send(uint8_t D_Add, uint8_t* dataBuf, uint8_t size)
 	//发送停止时序
 	I2C_GenerateSTOP(I2C1, ENABLE);
 }
-void I2CClass::send(uint8_t D_Add, uint8_t W_Add, uint8_t* dataBuf, uint8_t size)
+void I2CClass::send(uint8_t D_Add, uint8_t W_Add, uint8_t* dataBuf,
+		uint8_t size)
 {
 	//等待总线空闲
 	while (I2C_GetFlagStatus(I2C1, I2C_FLAG_BUSY))
@@ -233,7 +245,7 @@ void I2CClass::receive(uint8_t D_Add, uint8_t *dataBuf, uint8_t size)
 	I2C_Send7bitAddress(I2C1, D_Add, I2C_Direction_Receiver);
 	while (!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED))
 		;
-	/* Clear EV6 by setting again the PE bit */
+	// Clear EV6 by setting again the PE bit
 	I2C_Cmd(I2C1, ENABLE);
 	//打开主动应答
 	I2C_AcknowledgeConfig(I2C1, ENABLE);
@@ -244,21 +256,21 @@ void I2CClass::receive(uint8_t D_Add, uint8_t *dataBuf, uint8_t size)
 		while (!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_BYTE_RECEIVED))
 			;
 		{
-			/* Test on EV7 and clear it */
+			// Test on EV7 and clear it
 
-			/* Read a byte from the EEPROM */
+			// Read a byte from the EEPROM
 			*dataBuf = I2C_ReceiveData(I2C1);
 
-			/* Point to the next location where the byte read will be saved */
+			// Point to the next location where the byte read will be saved
 			dataBuf++;
 
-			/* Decrement the read bytes counter */
+			// Decrement the read bytes counter
 			size--;
 			if (size == 1)
 			{
-				/* Disable Acknowledgement */
+				// Disable Acknowledgement
 				I2C_AcknowledgeConfig(I2C1, DISABLE);
-				/* Send STOP Condition */
+				// Send STOP Condition
 				I2C_GenerateSTOP(I2C1, ENABLE);
 			}
 		}
@@ -268,7 +280,8 @@ void I2CClass::receive(uint8_t D_Add, uint8_t *dataBuf, uint8_t size)
 	I2C_AcknowledgeConfig(I2C1, ENABLE);
 }
 
-void I2CClass::receive(uint8_t D_Add, uint8_t R_Add, uint8_t* dataBuf, uint8_t size)
+void I2CClass::receive(uint8_t D_Add, uint8_t R_Add, uint8_t* dataBuf,
+		uint8_t size)
 {
 	//等待总线空闲
 	while (I2C_GetFlagStatus(I2C1, I2C_FLAG_BUSY))
@@ -299,24 +312,24 @@ void I2CClass::receive(uint8_t D_Add, uint8_t R_Add, uint8_t* dataBuf, uint8_t s
 	while (size)
 	{
 
-		/* Test on EV7 and clear it */
+		// Test on EV7 and clear it
 		while (!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_BYTE_RECEIVED))
 			;
 		{
-			/* Read a byte from the EEPROM */
+			// Read a byte from the EEPROM
 			*dataBuf = I2C_ReceiveData(I2C1);
 
-			/* Point to the next location where the byte read will be saved */
+			// Point to the next location where the byte read will be saved
 			dataBuf++;
 
-			/* Decrement the read bytes counter */
+			// Decrement the read bytes counter
 			size--;
 			if (size == 1)
 			{
-				/* Disable Acknowledgement */
+				// Disable Acknowledgement
 				I2C_AcknowledgeConfig(I2C1, DISABLE);
 
-				/* Send STOP Condition */
+				// Send STOP Condition
 				I2C_GenerateSTOP(I2C1, ENABLE);
 			}
 		}
@@ -324,3 +337,4 @@ void I2CClass::receive(uint8_t D_Add, uint8_t R_Add, uint8_t* dataBuf, uint8_t s
 	//打开主动应答
 	I2C_AcknowledgeConfig(I2C1, ENABLE);
 }
+*/

@@ -6,6 +6,8 @@
  */
 #include "SPI.h"
 
+SPIClass SPI;
+
 void SPI_GPIO_Init()
 {
 	GPIO_InitTypeDef GPIO_InitStructure;
@@ -31,7 +33,7 @@ void SPI_GPIO_Init()
 
 }
 
-void SPI::init()
+void SPIClass::init()
 {
 	SPI_InitTypeDef SPI_InitStructure;
 
@@ -50,7 +52,7 @@ void SPI::init()
 	SPI_Cmd(SPI1, ENABLE);
 }
 
-uint8_t SPI::transfer(uint8_t data)
+uint8_t SPIClass::transfer(uint8_t data)
 {
 	SPI_SendData8(SPI1,data);
 	while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_TXE) == RESET)		//等待时钟结束，以便接收数据

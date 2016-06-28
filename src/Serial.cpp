@@ -15,7 +15,6 @@ uint8_t USART1_RX_SP = 0;				//接收缓存器指针
 uint8_t USART1_Read_SP = 0;			//缓存器读取指针
 uint8_t USART1_Read_Available = 0;	//缓冲器未读字节
 
-
 void SerialClass::begin(uint32_t BaudRate)
 {
 	/*定义初始化用结构体*/
@@ -24,21 +23,28 @@ void SerialClass::begin(uint32_t BaudRate)
 	NVIC_InitTypeDef NVIC_InitStructure;
 
 	/*开启GPIOA和USART1的时钟*/
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_USART1,
-			ENABLE);
+	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);
+	RCC_USARTCLKConfig(RCC_USART1CLK_PCLK);
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1, ENABLE);
 
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_9;
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
+	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 
 	/*设置PA9为复用推挽输出*/
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
 
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_10;
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
+	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
 
 	/*设置PA10为浮动输入*/
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
+
+	GPIO_PinAFConfig(GPIOA, GPIO_PinSource9, GPIO_AF_1);
+	GPIO_PinAFConfig(GPIOA, GPIO_PinSource10, GPIO_AF_1);
 
 	/*串口初始化，波特率：参数1；无自动控制；双向；停止位：1位；字节：8；*/
 	USART_InitStructure.USART_BaudRate = BaudRate;
@@ -50,17 +56,17 @@ void SerialClass::begin(uint32_t BaudRate)
 	USART_InitStructure.USART_WordLength = USART_WordLength_8b;
 
 	USART_Init(USART1, &USART_InitStructure);
-	USART_Cmd(USART1, ENABLE);
 
 	/*配置中断优先级为组1  1位抢占 3位响应*/
-	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_1);
 	NVIC_InitStructure.NVIC_IRQChannel = USART1_IRQn;
 	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
-	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 2;
+	NVIC_InitStructure.NVIC_IRQChannelPriority = 0;
 
 	NVIC_Init(&NVIC_InitStructure);
 	USART_ITConfig(USART1, USART_IT_RXNE, ENABLE);
+
+	USART_Cmd(USART1, ENABLE);
+	USART_ClearFlag(USART1, USART_FLAG_TXE);
 }
 //void SerialClass::print(char *format,...)
 //{
@@ -135,8 +141,9 @@ void SerialClass::println(double data, uint8_t ndigit)
 uint8_t SerialClass::print_c(char c)
 {
 	USART_SendData(USART1, c);
-	while (!(USART1->SR & USART_FLAG_TXE))
+	while (USART_GetFlagStatus(USART1, USART_FLAG_TXE) == RESET)
 		;
+
 	return 1;
 }
 void SerialClass::print_s(char* str)
