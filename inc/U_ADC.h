@@ -23,6 +23,7 @@ public:
 	static void RefreshData(uint8_t ADC_Channel, uint8_t ADC_SampleTime,
 			uint8_t OverLevel = 0);
 private:
+	static void GPIOInit();
 	static void ADCInit();
 };
 

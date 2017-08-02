@@ -10,15 +10,28 @@
 uint16_t U_ADC::Data = 0;
 
 void U_ADC::Init() {
+	GPIOInit();
 	ADCInit();
 }
 
 void U_ADC::RegularChannelConfig(uint8_t ADC_Channel, uint8_t ADC_SampleTime) {
+	uint32_t tmpreg = 0;
 	ADC_ChannelConfig(ADC1, ADC_Channel, ADC_SampleTime);
+
+	/* Configure the ADC Channel */
+	ADC1->CHSELR = (uint32_t) ADC_Channel;
+
+	/* Clear the Sampling time Selection bits */
+	tmpreg &= ~ADC_SMPR1_SMPR;
+
+	/* Set the ADC Sampling Time register */
+	tmpreg |= (uint32_t) ADC_SampleTime;
+
+	/* Configure the ADC Sample time register */
+	ADC1->SMPR = tmpreg;
 }
 
 void U_ADC::RefreshData() {
-	ADC_StartOfConversion(ADC1);
 	ADC1->CR |= ((uint32_t) 0x00000004);
 	while (ADC_GetFlagStatus(ADC1, ADC_FLAG_EOC) == (uint8_t) RESET)
 		;
@@ -38,6 +51,19 @@ void U_ADC::RefreshData(uint8_t ADC_Channel, uint8_t ADC_SampleTime,
 		uint8_t OverLevel) {
 	RegularChannelConfig(ADC_Channel, ADC_SampleTime);
 	RefreshData(OverLevel);
+}
+
+void U_ADC::GPIOInit() {
+	GPIO_InitTypeDef GPIO_InitStructure;
+
+	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);
+
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_3;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AN;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
+	GPIO_Init(GPIOA, &GPIO_InitStructure);
 }
 
 void U_ADC::ADCInit() {
@@ -66,3 +92,4 @@ void U_ADC::ADCInit() {
 	while (!ADC_GetFlagStatus(ADC1, ADC_FLAG_ADEN))
 		;
 }
+
