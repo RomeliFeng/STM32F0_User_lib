@@ -15,7 +15,7 @@
 class U_ADC {
 public:
 	static uint16_t Data;
-	static void Init();
+	static void Init(uint8_t ADC_Channel, uint8_t ADC_SampleTime);
 	static void RegularChannelConfig(uint8_t ADC_Channel,
 			uint8_t ADC_SampleTime);
 	static void RefreshData();
@@ -24,7 +24,7 @@ public:
 			uint8_t OverLevel = 0);
 private:
 	static void GPIOInit();
-	static void ADCInit();
+	static void ADCInit(uint8_t ADC_Channel, uint8_t ADC_SampleTime);
 };
 
 #endif /* SRC_UADC_H_ */

@@ -19,9 +19,13 @@ volatile bool U_SPI1::Busy = false;
 void U_SPI1::Init(uint16_t SPI1_Speed) {
 	GPIOInit();
 	SPIInit(SPI1_Speed);
+#ifdef USE_DMA
 	DMAInit();
-	EXTIInit();
 	NVICInit();
+#endif
+#ifdef USE_NSS
+	EXTIInit();
+#endif
 	SPI_Cmd(SPI1, ENABLE);
 }
 
@@ -38,6 +42,29 @@ void U_SPI1::SendAsync(uint8_t* data, uint16_t size) {
 	DMA_Cmd(DMA1_Channel3, ENABLE);
 #else
 
+#endif
+}
+
+void U_SPI1::SendSync(uint8_t* data, uint16_t size) {
+#ifdef USE_DMA
+
+#else
+	while (size--) {
+		SendSync(*data);
+		data++;
+	}
+#endif
+}
+
+uint8_t U_SPI1::SendSync(uint8_t data) {
+#ifdef USE_DMA
+
+#else
+//	SPI_SendData8(SPI1, data);
+	*(__IO uint8_t *) ((uint32_t) SPI1 + 0x0c) = data;
+	while ((SPI1->SR & SPI_I2S_FLAG_RXNE) == RESET)
+		;
+	return *(__IO uint8_t *) ((uint32_t) SPI1 + 0x0c);
 #endif
 }
 
@@ -132,9 +159,10 @@ void U_SPI1::NVICInit() {
 	NVIC_Init(&NVIC_InitStructure);
 
 	DMA_ITConfig(DMA1_Channel3, DMA_IT_TC, ENABLE);
-
+#ifdef USE_NSS
 	NVIC_InitStructure.NVIC_IRQChannel = EXTI4_15_IRQn;
 	NVIC_Init(&NVIC_InitStructure);
+#endif
 #else
 	NVIC_InitStructure.NVIC_IRQChannel = SPI1_IRQn;
 	NVIC_Init(&NVIC_InitStructure);
@@ -163,6 +191,7 @@ __attribute__((weak)) void SPI1_EVENT() {
 
 extern "C" {
 
+#ifdef USE_DMA
 void SPI1_IRQHandler(void) {
 	if (SPI_I2S_GetITStatus(SPI1, SPI_I2S_IT_RXNE)) {
 		uint8_t tmp = (uint8_t) SPI1->DR;
@@ -181,7 +210,9 @@ void DMA1_Channel2_3_IRQHandler(void) {
 		DMA_Cmd(DMA1_Channel2, ENABLE);
 	}
 }
+#endif
 
+#ifdef USE_NSS
 void EXTI4_15_IRQHandler(void) {
 	if (EXTI_GetITStatus(EXTI_Line15) != RESET) {
 		DMA_Cmd(DMA1_Channel2, DISABLE);
@@ -195,5 +226,6 @@ void EXTI4_15_IRQHandler(void) {
 		EXTI_ClearITPendingBit(EXTI_Line15);
 	}
 }
+#endif
 
 }

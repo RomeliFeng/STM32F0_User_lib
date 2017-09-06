@@ -10,18 +10,20 @@
 
 #include "cmsis_device.h"
 
-#define SPI1_Speed_18M SPI_BaudRatePrescaler_4 //only on SPI1
-#define SPI1_Speed_9M SPI_BaudRatePrescaler_8
-#define SPI1_Speed_4_5M SPI_BaudRatePrescaler_16
-#define SPI1_Speed_2_25M SPI_BaudRatePrescaler_32
-#define SPI1_Speed_1_125M SPI_BaudRatePrescaler_64
-#define SPI1_Speed_562_5K SPI_BaudRatePrescaler_128
-#define SPI1_Speed_281_25K SPI_BaudRatePrescaler_256
+#define SPI1_Speed_24M SPI_BaudRatePrescaler_2
+#define SPI1_Speed_12M SPI_BaudRatePrescaler_4
+#define SPI1_Speed_6M SPI_BaudRatePrescaler_8
+#define SPI1_Speed_3M SPI_BaudRatePrescaler_16
+#define SPI1_Speed_1_5M SPI_BaudRatePrescaler_32
+#define SPI1_Speed_750K SPI_BaudRatePrescaler_64
+#define SPI1_Speed_375K SPI_BaudRatePrescaler_128
+#define SPI1_Speed_182_25K SPI_BaudRatePrescaler_256
 
 #define SPI1_TXBUF_SIZE 128
 #define SPI1_RXBUF_SIZE 128
 
 #define USE_DMA
+#define USE_NSS
 
 class U_SPI1 {
 public:
@@ -36,6 +38,8 @@ public:
 
 	static void Init(uint16_t SPI1_Speed);
 	static void SendAsync(uint8_t* data, uint16_t size);
+	static void SendSync(uint8_t* data, uint16_t size);
+	static uint8_t SendSync(uint8_t data);
 private:
 	static void GPIOInit();
 	static void SPIInit(uint16_t SPI1_Speed);

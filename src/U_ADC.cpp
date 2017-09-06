@@ -9,9 +9,9 @@
 
 uint16_t U_ADC::Data = 0;
 
-void U_ADC::Init() {
+void U_ADC::Init(uint8_t ADC_Channel, uint8_t ADC_SampleTime) {
 	GPIOInit();
-	ADCInit();
+	ADCInit(ADC_Channel, ADC_SampleTime);
 }
 
 void U_ADC::RegularChannelConfig(uint8_t ADC_Channel, uint8_t ADC_SampleTime) {
@@ -53,12 +53,12 @@ void U_ADC::RefreshData(uint8_t ADC_Channel, uint8_t ADC_SampleTime,
 	RefreshData(OverLevel);
 }
 
-void U_ADC::GPIOInit() {
+__attribute__((weak)) void U_ADC::GPIOInit() {
 	GPIO_InitTypeDef GPIO_InitStructure;
 
 	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);
 
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_3;
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AN;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
@@ -66,7 +66,7 @@ void U_ADC::GPIOInit() {
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
 }
 
-void U_ADC::ADCInit() {
+void U_ADC::ADCInit(uint8_t ADC_Channel, uint8_t ADC_SampleTime) {
 	ADC_InitTypeDef ADC_InitStructure;
 
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_ADC1, ENABLE);
@@ -77,11 +77,12 @@ void U_ADC::ADCInit() {
 	ADC_InitStructure.ADC_ContinuousConvMode = DISABLE;
 	ADC_InitStructure.ADC_ExternalTrigConv = ADC_ExternalTrigConvEdge_None;
 	ADC_InitStructure.ADC_DataAlign = ADC_DataAlign_Right;
+	ADC_InitStructure.ADC_ScanDirection = ADC_ScanDirection_Upward;
 	ADC_Init(ADC1, &ADC_InitStructure);
 
 	RCC_ADCCLKConfig(RCC_ADCCLK_PCLK_Div4);
 
-	ADC_ChannelConfig(ADC1, ADC_Channel_0, ADC_SampleTime_239_5Cycles);
+	ADC_ChannelConfig(ADC1, ADC_Channel, ADC_SampleTime);
 
 	ADC_TempSensorCmd(ENABLE);
 
