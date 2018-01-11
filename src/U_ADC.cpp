@@ -33,7 +33,7 @@ void U_ADC::RegularChannelConfig(uint8_t ADC_Channel, uint8_t ADC_SampleTime) {
 
 void U_ADC::RefreshData() {
 	ADC1->CR |= ((uint32_t) 0x00000004);
-	while (ADC_GetFlagStatus(ADC1, ADC_FLAG_EOC) == (uint8_t) RESET)
+	while ((ADC1->ISR & ADC_FLAG_EOC) == (uint8_t) RESET)
 		;
 	Data = ADC1->DR;
 }
